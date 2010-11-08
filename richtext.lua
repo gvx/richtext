@@ -188,6 +188,7 @@ local function doDraw(lines)
 			end
 		end
 	end
+	self.height = y
 end
 
 function rich:render(width, nofb)
