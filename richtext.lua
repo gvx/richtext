@@ -128,7 +128,7 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 	if x + fnt:getWidth(fragment) > width then -- oh oh! split the text
 		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
 	end
-	local h = fnt:getHeight(parsedtext[i])
+	local h = math.floor(fnt:getHeight(parsedtext[i]))
 	maxheight = math.max(maxheight, h)
 	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
 end
