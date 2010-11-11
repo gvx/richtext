@@ -188,7 +188,7 @@ local function doDraw(lines)
 			end
 		end
 	end
-	self.height = y
+	return y
 end
 
 function rich:render(width, nofb)
@@ -199,9 +199,9 @@ function rich:render(width, nofb)
 	love.graphics.setFont(firstFont)
 	--love.graphics.setColor(firstR, firstG, firstB, firstA) -- why does this matter?
 	if not nofb then
-		self.framebuffer:renderTo(function () doDraw(lines) end)
+		self.framebuffer:renderTo(function () self.height = doDraw(lines) end)
 	else
-		doDraw(lines)
+		self.height = doDraw(lines)
 	end
 	love.graphics.setFont(firstFont)
 	love.graphics.setColor(firstR, firstG, firstB, firstA)
