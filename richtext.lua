@@ -27,7 +27,6 @@ freely, subject to the following restrictions:
 --  * still under-tested
 --  * word wrapping might not be optimal
 --  * words keep their final space in wrapping, which may cause words to be wrapped too soon
---  * initial text color (other than white) has to be specified manually by starting text
 
 rich = {}
 rich.__index = rich
@@ -174,13 +173,13 @@ local function doDraw(lines)
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
 				end
 			elseif fragment.type == 'img' then
-				local firstR, firstG, firstB, firstA = love.graphics.getColor()
-				love.graphics.setColor(255, 255, 255)
+				local colorMode = love.graphics.getColorMode()
+				love.graphics.setColorMode('replace')
 				love.graphics.draw(fragment[1][1], fragment.x, y - fragment[1].height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment[1].height, fragment[1].width, fragment[1].height)
 				end
-				love.graphics.setColor(firstR, firstG, firstB, firstA)
+				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'font' then
 				love.graphics.setFont(fragment[1])
 			elseif fragment.type == 'color' then
@@ -197,7 +196,6 @@ function rich:render(width, nofb)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
 	local lines = doRender(self.parsedtext, width)
 	love.graphics.setFont(firstFont)
-	--love.graphics.setColor(firstR, firstG, firstB, firstA) -- why does this matter?
 	if not nofb then
 		self.framebuffer:renderTo(function () self.height = doDraw(lines) end)
 	else
