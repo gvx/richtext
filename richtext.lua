@@ -106,14 +106,20 @@ end
 
 local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
 	-- find first space, split again later if necessary
-	local n = fragment:find(' ', 1, true)
-	local newx
-	if n then
-		parsedtext[i] = fragment:sub(1, n)
+	if x > 0 then
+		local n = fragment:find(' ', 1, true)
+		local newx = x
+		while n do
+			newx = newx + fnt:getWidth(fragment:sub(1, n-1))
+			if newx > width then
+				break
+			end
+			n = fragment:find(' ', n + 1, true)
+		end
+		n = n or (#fragment + 1)
+		-- wrapping
+		parsedtext[i] = fragment:sub(1, n-1)
 		table.insert(parsedtext, i+1, fragment:sub(n+1))
-		newx = x + fnt:getWidth(fragment:sub(1, n-1))
-	end
-	if not n or newx > width and x > 0 then -- wrapping
 		lines[#lines].height = maxheight
 		maxheight = 0
 		x = 0
@@ -129,7 +135,7 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 	end
 	local h = math.floor(fnt:getHeight(parsedtext[i]))
 	maxheight = math.max(maxheight, h)
-	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
+	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x + fnt:getWidth' ' or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
 end
 
 local function renderImage(fragment, lines, maxheight, x, width)
@@ -157,6 +163,9 @@ local function doRender(parsedtext, width)
 			love.graphics.setFont(fragment[1])
 		end
 		table.insert(lines[#lines], fragment)
+	end
+	for i,f in ipairs(parsedtext) do
+		print(f)
 	end
 	lines[#lines].height = maxheight
 	return lines
