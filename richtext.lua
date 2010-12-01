@@ -119,13 +119,13 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 		n = n or (#fragment + 1)
 		-- wrapping
 		parsedtext[i] = fragment:sub(1, n-1)
-		table.insert(parsedtext, i+1, fragment:sub(n+1))
+		table.insert(parsedtext, i+1, fragment:sub(n))
 		lines[#lines].height = maxheight
 		maxheight = 0
 		x = 0
 		table.insert(lines, {})
 	end
-	return maxheight, x
+	return maxheight, x > 0 and x + fnt:getWidth' ' or 0
 end
 
 local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
@@ -135,7 +135,7 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 	end
 	local h = math.floor(fnt:getHeight(parsedtext[i]))
 	maxheight = math.max(maxheight, h)
-	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x + fnt:getWidth' ' or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
+	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
 end
 
 local function renderImage(fragment, lines, maxheight, x, width)
