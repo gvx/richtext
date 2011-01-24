@@ -133,7 +133,7 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 	if x + fnt:getWidth(fragment) > width then -- oh oh! split the text
 		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
 	end
-	local h = math.floor(fnt:getHeight(parsedtext[i]))
+	local h = math.floor(fnt:getHeight(parsedtext[i]) * fnt:getLineHeight())
 	maxheight = math.max(maxheight, h)
 	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
 end
@@ -177,10 +177,13 @@ local function doDraw(lines)
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
+				local colorMode = love.graphics.getColorMode()
+				love.graphics.setColorMode('modulate')
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
 				end
+				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'img' then
 				local colorMode = love.graphics.getColorMode()
 				love.graphics.setColorMode('replace')
