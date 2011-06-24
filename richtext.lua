@@ -33,7 +33,6 @@ rich.__index = rich
 
 function rich.new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	local obj = setmetatable({parsedtext = {}, resources = {}}, rich)
-	obj.framebuffer = love.graphics.newFramebuffer()
 	obj:extract(t)
 	obj:parse(t)
 	obj:render(t[2])
@@ -60,6 +59,14 @@ function rich:parse(t)
 	local text = t[1]
 	-- look for {tags} or [tags]
 	for textfragment, foundtag in text:gmatch'([^{]*){(.-)}' do
+		-- break up fragments with newlines
+		local n = textfragment:find('\n', 1, true)
+		while n do
+			table.insert(self.parsedtext, textfragment:sub(1, n-1))
+			table.insert(self.parsedtext, {type='nl'})
+			textfragment = textfragment:sub(n + 1)
+			n = textfragment:find('\n', 1, true)
+		end
 		table.insert(self.parsedtext, textfragment)
 		table.insert(self.parsedtext, self.resources[foundtag] or foundtag)
 	end
@@ -69,12 +76,16 @@ end
 local metainit = {}
 
 local log2 = 1/math.log(2)
+local function nextpo2(n)
+	return math.pow(2, math.ceil(math.log(n)*log2))
+end
+
 function metainit.Image(res, meta)
 	meta.type = 'img'
 	local w, h = res:getWidth(), res:getHeight()
 	if not rich.nopo2 then
-		local neww = math.pow(2, math.ceil(math.log(w)*log2))
-		local newh = math.pow(2, math.ceil(math.log(h)*log2))
+		local neww = nextpo2(w)
+		local newh = nextpo2(h)
 		if neww ~= w or newh ~= h then
 			local padded = love.image.newImageData(wp, hp)
 			padded:paste(love.image.newImageData(res), 0, 0)
@@ -108,9 +119,8 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 	-- find first space, split again later if necessary
 	if x > 0 then
 		local n = fragment:find(' ', 1, true)
-		local newx = x
 		while n do
-			newx = newx + fnt:getWidth(fragment:sub(1, n-1))
+			local newx = x + fnt:getWidth(fragment:sub(1, n-1))
 			if newx > width then
 				break
 			end
@@ -161,34 +171,45 @@ local function doRender(parsedtext, width)
 			maxheight, x, fragment = renderImage(fragment, lines, maxheight, x, width)
 		elseif fragment.type == 'font' then
 			love.graphics.setFont(fragment[1])
+		elseif fragment.type == 'nl' then
+			-- move onto next line, reset x and maxheight
+			lines[#lines].height = maxheight
+			maxheight = 0
+			x = 0
+			table.insert(lines, {})
+			-- don't want nl inserted into line
+			fragment = ''
 		end
 		table.insert(lines[#lines], fragment)
 	end
-	for i,f in ipairs(parsedtext) do
-		print(f)
-	end
+--~	 for i,f in ipairs(parsedtext) do
+--~		 print(f)
+--~	 end
 	lines[#lines].height = maxheight
 	return lines
 end
 
 local function doDraw(lines)
 	local y = 0
-	local colorMode = love.graphics.getColorMode()
 	for i, line in ipairs(lines) do -- do the actual rendering
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
+				local colorMode = love.graphics.getColorMode()
 				love.graphics.setColorMode('modulate')
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
 				end
+				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'img' then
+				local colorMode = love.graphics.getColorMode()
 				love.graphics.setColorMode('replace')
 				love.graphics.draw(fragment[1][1], fragment.x, y - fragment[1].height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment[1].height, fragment[1].width, fragment[1].height)
 				end
+				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'font' then
 				love.graphics.setFont(fragment[1])
 			elseif fragment.type == 'color' then
@@ -196,18 +217,29 @@ local function doDraw(lines)
 			end
 		end
 	end
-	love.graphics.setColorMode(colorMode)
-	return y
+end
+
+function rich:calcHeight(lines)
+	local h = 0
+	for _, line in ipairs(lines) do
+		h = h + line.height
+	end
+	return h
 end
 
 function rich:render(width, nofb)
-	width = width or math.huge -- if not given, use no wrapping
+	local renderWidth = width or math.huge -- if not given, use no wrapping
 	local firstFont = love.graphics.getFont() or love.graphics.newFont(12)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
-	local lines = doRender(self.parsedtext, width)
+	local lines = doRender(self.parsedtext, renderWidth)
+	-- dirty hack, add half height of last line to bottom of height to ensure tails of y's and g's, etc fit in properly.
+	self.height = self:calcHeight(lines) + math.floor((lines[#lines].height / 2) + 0.5)
+	local fbWidth = nextpo2(math.max(love.graphics.getWidth(), width or 0))
+	local fbHeight = nextpo2(math.max(love.graphics.getHeight(), self.height))
+	self.framebuffer = love.graphics.newFramebuffer(fbWidth, fbHeight)
 	love.graphics.setFont(firstFont)
 	if not nofb then
-		self.framebuffer:renderTo(function () self.height = doDraw(lines) end)
+		self.framebuffer:renderTo(function () doDraw(lines) end)
 	else
 		self.height = doDraw(lines)
 	end
