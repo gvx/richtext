@@ -119,14 +119,16 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 	-- find first space, split again later if necessary
 	if x > 0 then
 		local n = fragment:find(' ', 1, true)
+		local lastn = n
 		while n do
 			local newx = x + fnt:getWidth(fragment:sub(1, n-1))
 			if newx > width then
 				break
 			end
+			lastn = n
 			n = fragment:find(' ', n + 1, true)
 		end
-		n = n or (#fragment + 1)
+		n = lastn or (#fragment + 1)
 		-- wrapping
 		parsedtext[i] = fragment:sub(1, n-1)
 		table.insert(parsedtext, i+1, fragment:sub(fragment:find('[^ ]', n) or n))
