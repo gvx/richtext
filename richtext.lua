@@ -129,13 +129,13 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 		n = n or (#fragment + 1)
 		-- wrapping
 		parsedtext[i] = fragment:sub(1, n-1)
-		table.insert(parsedtext, i+1, fragment:sub(n))
+		table.insert(parsedtext, i+1, fragment:sub(fragment:find('[^ ]', n) or n))
 		lines[#lines].height = maxheight
 		maxheight = 0
 		x = 0
 		table.insert(lines, {})
 	end
-	return maxheight, x > 0 and x + fnt:getWidth' ' or 0
+	return maxheight, 0
 end
 
 local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
