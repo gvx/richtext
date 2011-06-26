@@ -55,22 +55,26 @@ function rich:extract(t)
 	end
 end
 
+local function parsefragment(parsedtext, textfragment)
+	-- break up fragments with newlines
+	local n = textfragment:find('\n', 1, true)
+	while n do
+		table.insert(parsedtext, textfragment:sub(1, n-1))
+		table.insert(parsedtext, {type='nl'})
+		textfragment = textfragment:sub(n + 1)
+		n = textfragment:find('\n', 1, true)
+	end
+	table.insert(parsedtext, textfragment)
+end
+
 function rich:parse(t)
 	local text = t[1]
 	-- look for {tags} or [tags]
 	for textfragment, foundtag in text:gmatch'([^{]*){(.-)}' do
-		-- break up fragments with newlines
-		local n = textfragment:find('\n', 1, true)
-		while n do
-			table.insert(self.parsedtext, textfragment:sub(1, n-1))
-			table.insert(self.parsedtext, {type='nl'})
-			textfragment = textfragment:sub(n + 1)
-			n = textfragment:find('\n', 1, true)
-		end
-		table.insert(self.parsedtext, textfragment)
+		parsefragment(self.parsedtext, textfragment)
 		table.insert(self.parsedtext, self.resources[foundtag] or foundtag)
 	end
-	table.insert(self.parsedtext, text:match('[^}]+$'))
+	parsefragment(self.parsedtext, text:match('[^}]+$'))
 end
 
 local metainit = {}
