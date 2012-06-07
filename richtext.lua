@@ -33,16 +33,26 @@ rich.__index = rich
 
 function rich.new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	local obj = setmetatable({parsedtext = {}, resources = {}}, rich)
+	obj.width = t[2]
 	obj:extract(t)
 	obj:parse(t)
-	obj:render(t[2])
+	if love.graphics.isSupported('canvas') then
+		obj:render(true)
+	end
 	return obj
 end
 
 function rich:draw(x, y)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
 	love.graphics.setColor(255, 255, 255, 255)
-	love.graphics.draw(self.framebuffer, x, y)
+	if self.framebuffer then
+		love.graphics.draw(self.framebuffer, x, y)
+	else
+		love.graphics.push()
+		love.graphics.translate(x, y)
+		self:render()
+		love.graphics.pop()
+	end
 	love.graphics.setColor(firstR, firstG, firstB, firstA)
 end
 
@@ -79,6 +89,7 @@ end
 
 local metainit = {}
 
+-- [[ since 0.8.0, no autopadding needed any more
 local log2 = 1/math.log(2)
 local function nextpo2(n)
 	return math.pow(2, math.ceil(math.log(n)*log2))
@@ -87,6 +98,7 @@ end
 function metainit.Image(res, meta)
 	meta.type = 'img'
 	local w, h = res:getWidth(), res:getHeight()
+	--[[ since 0.8.0, no autopadding needed any more
 	if not rich.nopo2 then
 		local neww = nextpo2(w)
 		local newh = nextpo2(h)
@@ -96,6 +108,7 @@ function metainit.Image(res, meta)
 			meta[1] = love.graphics.newImage(padded)
 		end
 	end
+	]]
 	meta.width = meta.width or w
 	meta.height = meta.height or h
 end
@@ -134,7 +147,7 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 		end
 		n = lastn or (#fragment + 1)
 		-- wrapping
-		parsedtext[i] = fragment:sub(1, n-1)
+		parsedtext[i] = fragment:sub(1, n-1) .. " " -- weird bug
 		table.insert(parsedtext, i+1, fragment:sub(fragment:find('[^ ]', n) or n))
 		lines[#lines].height = maxheight
 		maxheight = 0
@@ -197,11 +210,11 @@ end
 
 local function doDraw(lines)
 	local y = 0
+	local colorMode = love.graphics.getColorMode()
 	for i, line in ipairs(lines) do -- do the actual rendering
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
-				local colorMode = love.graphics.getColorMode()
 				love.graphics.setColorMode('modulate')
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
@@ -209,7 +222,6 @@ local function doDraw(lines)
 				end
 				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'img' then
-				local colorMode = love.graphics.getColorMode()
 				love.graphics.setColorMode('replace')
 				love.graphics.draw(fragment[1][1], fragment.x, y - fragment[1].height)
 				if rich.debug then
@@ -233,8 +245,8 @@ function rich:calcHeight(lines)
 	return h
 end
 
-function rich:render(width, nofb)
-	local renderWidth = width or math.huge -- if not given, use no wrapping
+function rich:render(nofb)
+	local renderWidth = self.width or math.huge -- if not given, use no wrapping
 	local firstFont = love.graphics.getFont() or love.graphics.newFont(12)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
 	local lines = doRender(self.parsedtext, renderWidth)
@@ -242,9 +254,9 @@ function rich:render(width, nofb)
 	self.height = self:calcHeight(lines) + math.floor((lines[#lines].height / 2) + 0.5)
 	local fbWidth = math.max(nextpo2(math.max(love.graphics.getWidth(), width or 0)), nextpo2(math.max(love.graphics.getHeight(), self.height)))
 	local fbHeight = fbWidth
-	self.framebuffer = love.graphics.newFramebuffer(fbWidth, fbHeight)
 	love.graphics.setFont(firstFont)
 	if not nofb then
+		self.framebuffer = love.graphics.newCanvas(fbWidth, fbHeight)
 		self.framebuffer:renderTo(function () doDraw(lines) end)
 	else
 		self.height = doDraw(lines)
