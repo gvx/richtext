@@ -37,6 +37,7 @@ function rich.new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	obj:extract(t)
 	obj:parse(t)
 	if love.graphics.isSupported('canvas') then
+		obj:render()
 		obj:render(true)
 	end
 	return obj
@@ -147,8 +148,8 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 		end
 		n = lastn or (#fragment + 1)
 		-- wrapping
-		parsedtext[i] = fragment:sub(1, n-1) .. " " -- weird bug
-		table.insert(parsedtext, i+1, fragment:sub(fragment:find('[^ ]', n) or n))
+		parsedtext[i] = fragment:sub(1, n-1)
+		table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
 		lines[#lines].height = maxheight
 		maxheight = 0
 		x = 0
@@ -245,7 +246,7 @@ function rich:calcHeight(lines)
 	return h
 end
 
-function rich:render(nofb)
+function rich:render(usefb)
 	local renderWidth = self.width or math.huge -- if not given, use no wrapping
 	local firstFont = love.graphics.getFont() or love.graphics.newFont(12)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
@@ -255,7 +256,7 @@ function rich:render(nofb)
 	local fbWidth = math.max(nextpo2(math.max(love.graphics.getWidth(), width or 0)), nextpo2(math.max(love.graphics.getHeight(), self.height)))
 	local fbHeight = fbWidth
 	love.graphics.setFont(firstFont)
-	if not nofb then
+	if usefb then
 		self.framebuffer = love.graphics.newCanvas(fbWidth, fbHeight)
 		self.framebuffer:renderTo(function () doDraw(lines) end)
 	else
