@@ -46,8 +46,11 @@ end
 function rich:draw(x, y)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
 	love.graphics.setColor(255, 255, 255, 255)
+	local prevMode = love.graphics.getBlendMode()
 	if self.framebuffer then
+		love.graphics.setBlendMode("premultiplied")
 		love.graphics.draw(self.framebuffer, x, y)
+		love.graphics.setBlendMode(prevMode)
 	else
 		love.graphics.push()
 		love.graphics.translate(x, y)
