@@ -229,7 +229,6 @@ local function doDraw(lines)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment[1].height, fragment[1].width, fragment[1].height)
 				end
-				print(colorx)
 				love.graphics.setColor(colorr,colorg,colorb,colora)
 			elseif fragment.type == 'font' then
 				love.graphics.setFont(fragment[1])
