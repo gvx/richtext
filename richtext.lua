@@ -214,28 +214,27 @@ end
 
 local function doDraw(lines)
 	local y = 0
-	local colorMode = love.graphics.getColorMode()
+	local colorr,colorg,colorb,colora = love.graphics.getColor()
 	for i, line in ipairs(lines) do -- do the actual rendering
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
-				love.graphics.setColorMode('modulate')
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
 				end
-				love.graphics.setColorMode(colorMode)
 			elseif fragment.type == 'img' then
-				love.graphics.setColorMode('replace')
+				love.graphics.setColor(255,255,255)
 				love.graphics.draw(fragment[1][1], fragment.x, y - fragment[1].height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment[1].height, fragment[1].width, fragment[1].height)
 				end
-				love.graphics.setColorMode(colorMode)
+				love.graphics.setColor(colorr,colorg,colorb,colora)
 			elseif fragment.type == 'font' then
 				love.graphics.setFont(fragment[1])
 			elseif fragment.type == 'color' then
 				love.graphics.setColor(unpack(fragment))
+				colorr,colorg,colorb,colora = love.graphics.getColor()
 			end
 		end
 	end
