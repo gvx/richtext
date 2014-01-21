@@ -28,7 +28,7 @@ freely, subject to the following restrictions:
 --  * word wrapping might not be optimal
 --  * words keep their final space in wrapping, which may cause words to be wrapped too soon
 
-rich = {}
+local rich = {}
 rich.__index = rich
 
 function rich.new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
@@ -267,3 +267,5 @@ function rich:render(usefb)
 	love.graphics.setFont(firstFont)
 	love.graphics.setColor(firstR, firstG, firstB, firstA)
 end
+
+return rich
