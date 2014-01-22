@@ -18,14 +18,14 @@ or
 
     local rich = require 'richtext'
     
-    local textmarcos = {}
-    textmarcos.black = {0, 0, 0}
-    textmarcos.green = {0, 255, 0}
-    textmarcos.red = {255, 0, 0}
-    textmarcos.big = love.graphics.newFont(20)
-    textmarcos['smile.png'] = love.graphics.newImage('smile.png')
+    local textmacros = {}
+    textmacros.black = {0, 0, 0}
+    textmacros.green = {0, 255, 0}
+    textmacros.red = {255, 0, 0}
+    textmacros.big = love.graphics.newFont(20)
+    textmacros['smile.png'] = love.graphics.newImage('smile.png')
 
-    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200, textmarcos }
+    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200, textmacros }
 
     function love.draw()
         rt:draw(10, 10)
