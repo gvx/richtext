@@ -2,6 +2,7 @@
 
 --[[
 Copyright (c) 2010 Robin Wellner
+Copyright (c) 2014 Florian Fischer (class changes)
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -31,13 +32,12 @@ freely, subject to the following restrictions:
 local rich = {}
 rich.__index = rich
 
-function rich.new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
+function rich:new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	local obj = setmetatable({parsedtext = {}, resources = {}}, rich)
 	obj.width = t[2]
 	obj:extract(t)
 	obj:parse(t)
 	if love.graphics.isSupported('canvas') then
-		obj:render()
 		obj:render(true)
 	end
 	return obj
@@ -61,10 +61,17 @@ function rich:draw(x, y)
 end
 
 function rich:extract(t)
-	for key,value in pairs(t) do
-		if type(key) == 'string' then
+	if t[3] and type(t[3]) == 'table' then
+		for key,value in pairs(t[3]) do
 			local meta = type(value) == 'table' and value or {value}
 			self.resources[key] = self:initmeta(meta) -- sets default values, does a PO2 fix...
+		end
+	elseif t[3] then
+		for key,value in pairs(t) do
+			if type(key) == 'string' then
+				local meta = type(value) == 'table' and value or {value}
+				self.resources[key] = self:initmeta(meta) -- sets default values, does a PO2 fix...
+			end
 		end
 	end
 end
@@ -91,14 +98,13 @@ function rich:parse(t)
 	parsefragment(self.parsedtext, text:match('[^}]+$'))
 end
 
-local metainit = {}
-
 -- [[ since 0.8.0, no autopadding needed any more
 local log2 = 1/math.log(2)
 local function nextpo2(n)
 	return math.pow(2, math.ceil(math.log(n)*log2))
 end
 
+local metainit = {}
 function metainit.Image(res, meta)
 	meta.type = 'img'
 	local w, h = res:getWidth(), res:getHeight()
@@ -116,11 +122,9 @@ function metainit.Image(res, meta)
 	meta.width = meta.width or w
 	meta.height = meta.height or h
 end
-
 function metainit.Font(res, meta)
 	meta.type = 'font'
 end
-
 function metainit.number(res, meta)
 	meta.type = 'color'
 end
@@ -260,6 +264,7 @@ function rich:render(usefb)
 	love.graphics.setFont(firstFont)
 	if usefb then
 		self.framebuffer = love.graphics.newCanvas(fbWidth, fbHeight)
+		self.framebuffer:setFilter( 'nearest', 'nearest' )
 		self.framebuffer:renderTo(function () doDraw(lines) end)
 	else
 		self.height = doDraw(lines)
