@@ -15,6 +15,7 @@
     end
     
 or
+
     local rich = require 'richtext'
     
     local textmarcos = {}
