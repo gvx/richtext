@@ -5,10 +5,26 @@
 
     local rich = require 'richtext'
 
-    rt = rich.new{"Hello {green}world{red}, {smile} {big}Big text.", 200,
+    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200,
                   black = {0, 0, 0}, green = {0, 255, 0},
                   big = love.graphics.newFont(20), red = {255, 0, 0},
                   smile = love.graphics.newImage('smile.png')}
+
+    function love.draw()
+        rt:draw(10, 10)
+    end
+    
+or
+    local rich = require 'richtext'
+    
+    local textmarcos = {}
+    textmarcos.black = {0, 0, 0}
+    textmarcos.green = {0, 255, 0}
+    textmarcos.red = {255, 0, 0}
+    textmarcos.big = love.graphics.newFont(20)
+    textmarcos['smile.png'] = love.graphics.newImage('smile.png')
+
+    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200, textmarcos }
 
     function love.draw()
         rt:draw(10, 10)
