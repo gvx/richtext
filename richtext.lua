@@ -32,12 +32,15 @@ freely, subject to the following restrictions:
 local rich = {}
 rich.__index = rich
 
-function rich:new(t) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
+function rich:new(t, stdcolor) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	local obj = setmetatable({parsedtext = {}, resources = {}}, rich)
 	obj.width = t[2]
 	obj:extract(t)
 	obj:parse(t)
-	if love.graphics.isSupported('canvas') then
+	-- set text standard color
+	if stdcolor and type(stdcolor) =='table' then love.graphics.setColor( unpack(stdcolor) ) end
+	if love.graphics.isSupported and love.graphics.isSupported('canvas') then
+		obj:render()
 		obj:render(true)
 	end
 	return obj
@@ -90,12 +93,14 @@ end
 
 function rich:parse(t)
 	local text = t[1]
-	-- look for {tags} or [tags]
-	for textfragment, foundtag in text:gmatch'([^{]*){(.-)}' do
-		parsefragment(self.parsedtext, textfragment)
-		table.insert(self.parsedtext, self.resources[foundtag] or foundtag)
+	if string.len(text) > 0 then 
+		-- look for {tags} or [tags]
+		for textfragment, foundtag in text:gmatch'([^{]*){(.-)}' do
+			parsefragment(self.parsedtext, textfragment)
+			table.insert(self.parsedtext, self.resources[foundtag] or foundtag)
+		end
+		parsefragment(self.parsedtext, text:match('[^}]+$'))
 	end
-	parsefragment(self.parsedtext, text:match('[^}]+$'))
 end
 
 -- [[ since 0.8.0, no autopadding needed any more
@@ -142,26 +147,25 @@ end
 
 local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
 	-- find first space, split again later if necessary
-	if x > 0 then
-		local n = fragment:find(' ', 1, true)
-		local lastn = n
-		while n do
-			local newx = x + fnt:getWidth(fragment:sub(1, n-1))
-			if newx > width then
-				break
-			end
-			lastn = n
-			n = fragment:find(' ', n + 1, true)
+	local n = fragment:find(' ', 1, true)
+	local lastn = n
+	while n do
+		local newx = x + fnt:getWidth(fragment:sub(1, n-1))
+		if newx > width then
+			break
 		end
-		n = lastn or (#fragment + 1)
-		-- wrapping
-		parsedtext[i] = fragment:sub(1, n-1)
-		table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
-		lines[#lines].height = maxheight
-		maxheight = 0
-		x = 0
-		table.insert(lines, {})
+		lastn = n
+		n = fragment:find(' ', n + 1, true)
 	end
+	n = lastn or (#fragment + 1)
+	-- wrapping
+	parsedtext[i] = fragment:sub(1, n-1)
+	table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
+	lines[#lines].height = maxheight
+	maxheight = 0
+	x = 0
+	table.insert(lines, {})
+
 	return maxheight, 0
 end
 
@@ -223,6 +227,10 @@ local function doDraw(lines)
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
+				-- remove leading spaces for new lines
+				if string.sub(fragment[1], 1, 1) == ' ' then
+					fragment[1] = string.sub(fragment[1], 2)
+				end
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
@@ -241,6 +249,7 @@ local function doDraw(lines)
 				colorr,colorg,colorb,colora = love.graphics.getColor()
 			end
 		end
+
 	end
 end
 
