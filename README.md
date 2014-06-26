@@ -18,6 +18,8 @@ or
 
     local rich = require 'richtext'
     
+    local initialcolor = {255,255,255,255}
+    
     local textmacros = {}
     textmacros.black = {0, 0, 0}
     textmacros.green = {0, 255, 0}
@@ -25,7 +27,7 @@ or
     textmacros.big = love.graphics.newFont(20)
     textmacros['smile.png'] = love.graphics.newImage('smile.png')
 
-    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200, textmacros }
+    rt = rich:new( {"Hello {green}world{red}, {smile} {big}Big text.", 200, textmacros }, initialcolor )
 
     function love.draw()
         rt:draw(10, 10)
