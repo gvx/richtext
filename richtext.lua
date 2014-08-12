@@ -174,6 +174,26 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 	if x + fnt:getWidth(fragment) > width then -- oh oh! split the text
 		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
 	end
+	if x + fnt:getWidth(parsedtext[i]) > width then
+		local n = #parsedtext[i]
+		while x + fnt:getWidth(parsedtext[i]:sub(1, n)) > width do
+			n = n - 1
+		end
+		local p1, p2 = parsedtext[i]:sub(1, n - 1), parsedtext[i]:sub(n)
+		parsedtext[i] = p1
+		if not parsedtext[i + 1] then
+			parsedtext[i + 1] = p2
+		elseif type(parsedtext[i + 1]) == 'string' then
+			parsedtext[i + 1] = p2 .. parsedtext[i + 1]
+		elseif type(parsedtext[i + 1]) == 'table' then
+			table.insert(parsedtext, i + 2, p2)
+			table.insert(parsedtext, i + 3, {type='nl'})
+		end
+		lines[#lines].height = maxheight
+		maxheight = 0
+		x = 0
+		table.insert(lines, {})
+	end
 	local h = math.floor(fnt:getHeight(parsedtext[i]) * fnt:getLineHeight())
 	maxheight = math.max(maxheight, h)
 	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
