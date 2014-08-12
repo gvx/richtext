@@ -35,6 +35,7 @@ rich.__index = rich
 function rich:new(t, stdcolor) -- syntax: rt = rich.new{text, width, resource1 = ..., ...}
 	local obj = setmetatable({parsedtext = {}, resources = {}}, rich)
 	obj.width = t[2]
+	obj.hardwrap = false
 	obj:extract(t)
 	obj:parse(t)
 	-- set text standard color
@@ -145,36 +146,40 @@ function rich:initmeta(meta)
 	return meta
 end
 
-local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
-	-- find first space, split again later if necessary
-	local n = fragment:find(' ', 1, true)
-	local lastn = n
-	while n do
-		local newx = x + fnt:getWidth(fragment:sub(1, n-1))
-		if newx > width then
-			break
+local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt, hardwrap)
+	if not hardwrap or (hardwrap and x > 0) then
+		-- find first space, split again later if necessary
+		local n = fragment:find(' ', 1, true)
+		local lastn = n
+		while n do
+			local newx = x + fnt:getWidth(fragment:sub(1, n-1))
+			if newx > width then
+				break
+			end
+			lastn = n
+			n = fragment:find(' ', n + 1, true)
 		end
-		lastn = n
-		n = fragment:find(' ', n + 1, true)
+		n = lastn or (#fragment + 1)
+		-- wrapping
+		parsedtext[i] = fragment:sub(1, n-1)
+		table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
+		lines[#lines].height = maxheight
+		maxheight = 0
+		x = 0
+		table.insert(lines, {})
 	end
-	n = lastn or (#fragment + 1)
-	-- wrapping
-	parsedtext[i] = fragment:sub(1, n-1)
-	table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
-	lines[#lines].height = maxheight
-	maxheight = 0
-	x = 0
-	table.insert(lines, {})
-
+	
 	return maxheight, 0
 end
 
-local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
+local function renderText(parsedtext, fragment, lines, maxheight, x, width, i, hardwrap)
 	local fnt = love.graphics.getFont() or love.graphics.newFont(12)
 	if x + fnt:getWidth(fragment) > width then -- oh oh! split the text
-		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt)
+		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt, hardwrap)
 	end
-	if x + fnt:getWidth(parsedtext[i]) > width then
+
+	-- hardwrap long words
+	if hardwrap and x + fnt:getWidth(parsedtext[i]) > width then
 		local n = #parsedtext[i]
 		while x + fnt:getWidth(parsedtext[i]:sub(1, n)) > width do
 			n = n - 1
@@ -194,6 +199,7 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i)
 		x = 0
 		table.insert(lines, {})
 	end
+
 	local h = math.floor(fnt:getHeight(parsedtext[i]) * fnt:getLineHeight())
 	maxheight = math.max(maxheight, h)
 	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
@@ -211,13 +217,13 @@ local function renderImage(fragment, lines, maxheight, x, width)
 	return maxheight, newx, {fragment, x = x, type = 'img'}
 end
 
-local function doRender(parsedtext, width)
+local function doRender(parsedtext, width, hardwrap)
 	local x = 0
 	local lines = {{}}
 	local maxheight = 0
 	for i, fragment in ipairs(parsedtext) do -- prepare rendering
 		if type(fragment) == 'string' then
-			maxheight, x, fragment = renderText(parsedtext, fragment, lines, maxheight, x, width, i)
+			maxheight, x, fragment = renderText(parsedtext, fragment, lines, maxheight, x, width, i, hardwrap)
 		elseif fragment.type == 'img' then
 			maxheight, x, fragment = renderImage(fragment, lines, maxheight, x, width)
 		elseif fragment.type == 'font' then
@@ -247,8 +253,10 @@ local function doDraw(lines)
 		y = y + line.height
 		for j, fragment in ipairs(line) do
 			if fragment.type == 'string' then
-				-- remove leading spaces for new lines
-				if string.sub(fragment[1], 1, 1) == ' ' then
+				-- remove leading spaces, but only at the begin of a new line
+				-- Note: the check for fragment 2 (j==2) is to avoid a sub for leading line space
+				if j==2 and string.sub(fragment[1], 1, 1) == ' ' then
+					print(i,y,j,fragment[1])
 					fragment[1] = string.sub(fragment[1], 2)
 				end
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
@@ -285,7 +293,7 @@ function rich:render(usefb)
 	local renderWidth = self.width or math.huge -- if not given, use no wrapping
 	local firstFont = love.graphics.getFont() or love.graphics.newFont(12)
 	local firstR, firstG, firstB, firstA = love.graphics.getColor()
-	local lines = doRender(self.parsedtext, renderWidth)
+	local lines = doRender(self.parsedtext, renderWidth, self.hardwrap)
 	-- dirty hack, add half height of last line to bottom of height to ensure tails of y's and g's, etc fit in properly.
 	self.height = self:calcHeight(lines) + math.floor((lines[#lines].height / 2) + 0.5)
 	local fbWidth = math.max(nextpo2(math.max(love.graphics.getWidth(), width or 0)), nextpo2(math.max(love.graphics.getHeight(), self.height)))
