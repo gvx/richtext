@@ -5,10 +5,29 @@
 
     local rich = require 'richtext'
 
-    rt = rich.new{"Hello {green}world{red}, {smile} {big}Big text.", 200,
+    rt = rich:new{"Hello {green}world{red}, {smile} {big}Big text.", 200,
                   black = {0, 0, 0}, green = {0, 255, 0},
                   big = love.graphics.newFont(20), red = {255, 0, 0},
                   smile = love.graphics.newImage('smile.png')}
+
+    function love.draw()
+        rt:draw(10, 10)
+    end
+    
+or
+
+    local rich = require 'richtext'
+    
+    local initialcolor = {255,255,255,255}
+    
+    local textmacros = {}
+    textmacros.black = {0, 0, 0}
+    textmacros.green = {0, 255, 0}
+    textmacros.red = {255, 0, 0}
+    textmacros.big = love.graphics.newFont(20)
+    textmacros['smile.png'] = love.graphics.newImage('smile.png')
+
+    rt = rich:new( {"Hello {green}world{red}, {smile} {big}Big text.", 200, textmacros }, initialcolor )
 
     function love.draw()
         rt:draw(10, 10)
@@ -37,7 +56,7 @@
 
 # license
 
-Copyright (c) 2010 Robin Wellner
+Copyright (c) 2010 Robin Wellner, (c) 2014 Florian Fischer
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
