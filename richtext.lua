@@ -256,7 +256,6 @@ local function doDraw(lines)
 				-- remove leading spaces, but only at the begin of a new line
 				-- Note: the check for fragment 2 (j==2) is to avoid a sub for leading line space
 				if j==2 and string.sub(fragment[1], 1, 1) == ' ' then
-					print(i,y,j,fragment[1])
 					fragment[1] = string.sub(fragment[1], 2)
 				end
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
