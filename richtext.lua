@@ -70,7 +70,7 @@ function rich:extract(t)
 			local meta = type(value) == 'table' and value or {value}
 			self.resources[key] = self:initmeta(meta) -- sets default values, does a PO2 fix...
 		end
-	elseif t[3] then
+	else
 		for key,value in pairs(t) do
 			if type(key) == 'string' then
 				local meta = type(value) == 'table' and value or {value}
