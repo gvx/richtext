@@ -70,7 +70,7 @@ function rich:extract(t)
 			local meta = type(value) == 'table' and value or {value}
 			self.resources[key] = self:initmeta(meta) -- sets default values, does a PO2 fix...
 		end
-	elseif t[3] then
+	else
 		for key,value in pairs(t) do
 			if type(key) == 'string' then
 				local meta = type(value) == 'table' and value or {value}
@@ -256,7 +256,6 @@ local function doDraw(lines)
 				-- remove leading spaces, but only at the begin of a new line
 				-- Note: the check for fragment 2 (j==2) is to avoid a sub for leading line space
 				if j==2 and string.sub(fragment[1], 1, 1) == ' ' then
-					print(i,y,j,fragment[1])
 					fragment[1] = string.sub(fragment[1], 2)
 				end
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
