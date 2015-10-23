@@ -295,7 +295,7 @@ function rich:render(usefb)
 	local lines = doRender(self.parsedtext, renderWidth, self.hardwrap)
 	-- dirty hack, add half height of last line to bottom of height to ensure tails of y's and g's, etc fit in properly.
 	self.height = self:calcHeight(lines) + math.floor((lines[#lines].height / 2) + 0.5)
-	local fbWidth = math.max(nextpo2(math.max(love.graphics.getWidth(), width or 0)), nextpo2(math.max(love.graphics.getHeight(), self.height)))
+	local fbWidth = math.max(nextpo2(math.max(love.graphics.getWidth(), self.width or 0)), nextpo2(math.max(love.graphics.getHeight(), self.height)))
 	local fbHeight = fbWidth
 	love.graphics.setFont(firstFont)
 	if usefb then
