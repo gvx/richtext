@@ -162,7 +162,8 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 		n = lastn or (#fragment + 1)
 		-- wrapping
 		parsedtext[i] = fragment:sub(1, n-1)
-		table.insert(parsedtext, i+1, fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1))
+		local nextfrag = fragment:sub((fragment:find('[^ ]', n) or (n+1)) - 1)
+		table.insert(parsedtext, i+1, nextfrag)
 		lines[#lines].height = maxheight
 		maxheight = 0
 		x = 0
@@ -172,19 +173,26 @@ local function wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt
 	return maxheight, 0
 end
 
+local utf8 = require "utf8"
+
 local function renderText(parsedtext, fragment, lines, maxheight, x, width, i, hardwrap)
 	local fnt = love.graphics.getFont() or love.graphics.newFont(12)
+
+	local origx = x
+
 	if x + fnt:getWidth(fragment) > width then -- oh oh! split the text
-		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt, hardwrap)
+		maxheight, x = wrapText(parsedtext, fragment, lines, maxheight, x, width, i, fnt, false)
 	end
 
 	-- hardwrap long words
 	if hardwrap and x + fnt:getWidth(parsedtext[i]) > width then
 		local n = #parsedtext[i]
-		while x + fnt:getWidth(parsedtext[i]:sub(1, n)) > width do
-			n = n - 1
+		local orig = parsedtext[i]
+		local p1, p2 = parsedtext[i], ""
+		while x + fnt:getWidth(p1) > width do
+			local boff = utf8.offset(p1, -1)
+			p1, p2 = string.sub(p1, 1, boff - 1), string.sub(orig, boff)
 		end
-		local p1, p2 = parsedtext[i]:sub(1, n - 1), parsedtext[i]:sub(n)
 		parsedtext[i] = p1
 		if not parsedtext[i + 1] then
 			parsedtext[i + 1] = p2
@@ -202,6 +210,10 @@ local function renderText(parsedtext, fragment, lines, maxheight, x, width, i, h
 
 	local h = math.floor(fnt:getHeight(parsedtext[i]) * fnt:getLineHeight())
 	maxheight = math.max(maxheight, h)
+
+	if origx == 0 and string.sub(parsedtext[i], 1, 1) == ' ' then
+		parsedtext[i] = string.sub(parsedtext[i], 2)
+	end
 	return maxheight, x + fnt:getWidth(parsedtext[i]), {parsedtext[i], x = x > 0 and x or 0, type = 'string', height = h, width = fnt:getWidth(parsedtext[i])}
 end
 
@@ -255,9 +267,7 @@ local function doDraw(lines)
 			if fragment.type == 'string' then
 				-- remove leading spaces, but only at the begin of a new line
 				-- Note: the check for fragment 2 (j==2) is to avoid a sub for leading line space
-				if j==2 and string.sub(fragment[1], 1, 1) == ' ' then
-					fragment[1] = string.sub(fragment[1], 2)
-				end
+
 				love.graphics.print(fragment[1], fragment.x, y - fragment.height)
 				if rich.debug then
 					love.graphics.rectangle('line', fragment.x, y - fragment.height, fragment.width, fragment.height)
